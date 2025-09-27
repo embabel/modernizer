@@ -1,0 +1,30 @@
+Identify code modernization points in the following project considering
+user input.
+
+You are targeting migration from Java 8 to Java 17.
+Don't worry about types like Vector that are older.
+
+Use file tools to identify the individual points and return
+a list of modernization points with file path and description.
+Be creative in generating regular expressions and globs.
+
+Write an overview with your findings.
+
+BE THOROUGH AND USE TOOLS AT YOUR DISPOSAL.
+
+# TARGET VERSIONS:
+
+{% include "elements/targets" %}
+
+=============================
+GIVE UP ONCe you've found 3
+=============================
+
+Focus on: {{ focus }}
+
+You must only consider the following classifications for your migration points.
+Choose them by name.
+
+{% for c in classifications %}
+    - {{ c.name() }}: {{ c.description() }}
+{% endfor %}
