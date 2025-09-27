@@ -22,8 +22,6 @@ public class ModernizerAgent {
 
     private final Logger logger = LoggerFactory.getLogger(ModernizerAgent.class);
 
-    private int modificationCount = 0;
-
     private final List<Classification> classifications = List.of(
             new Classification("Legacy", "Code that is outdated and may not follow current best practices."),
             new Classification("Deprecated", "Code that uses deprecated libraries or frameworks that are no longer supported."),
@@ -74,17 +72,21 @@ public class ModernizerAgent {
                             .stream()
                             .filter(mp -> Objects.equals(mp.classificationName(), classification.name())).toList(),
                     1,
-                    mp -> tryToFix(mp, context)
+                    mp -> tryToFixIndividualMigrationPoint(mp, context.ai())
             ));
             softwareProject.checkoutBranch(currentBranch);
         }
         return new Domain.MigrationsReport(migrations);
     }
 
-    private Domain.MigrationReport tryToFix(
+    /**
+     * Try to fix an individual migration point
+     * Commit if successful, otherwise revert
+     */
+    private Domain.MigrationReport tryToFixIndividualMigrationPoint(
             Domain.MigrationPoint migrationPoint,
-            OperationContext operationContext) {
-        var migrationReport = operationContext.ai()
+            Ai ai) {
+        var migrationReport = ai
                 .withLlmByRole("best")
                 .withReferences(softwareProject)
                 .withToolObject(new BashTools(softwareProject.getRoot()))
@@ -101,6 +103,6 @@ public class ModernizerAgent {
             logger.info("Reverting branch as migration was not successful");
             softwareProject.revert();
         }
-        return migrationReport;
+        return migrationReport.withBranch(softwareProject.currentBranch());
     }
 }
