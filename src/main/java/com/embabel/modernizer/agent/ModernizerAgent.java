@@ -9,16 +9,13 @@ import com.embabel.agent.domain.io.UserInput;
 import com.embabel.agent.domain.library.code.SoftwareProject;
 import com.embabel.coding.tools.bash.BashTools;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Agent(description = "Code modernization agent")
 public class ModernizerAgent {
@@ -36,136 +33,8 @@ public class ModernizerAgent {
 
 
     private SoftwareProject softwareProject = new SoftwareProject(
-            "/Users/rjohnson/dev/qct-reference-app1/spring-mysql-app"
+            "/Users/rjohnson/dev/qct-reference-app1"
     );
-
-    private final Repository repository;
-    private final Git git;
-
-    public ModernizerAgent() {
-        try {
-            FileRepositoryBuilder builder = new FileRepositoryBuilder();
-            this.repository = builder
-                    .setGitDir(Path.of(
-                            "/Users/rjohnson/dev/qct-reference-app1",
-                            // softwareProject.getRoot(),
-                            ".git").toFile())
-                    .build();
-            this.git = new Git(repository);
-
-            // Note: In many JGit use cases, Git instances should be closed using try-with-resources.
-            // However, in this case, the Git instance is a class field that needs to remain open
-            // for the lifetime of the agent, so we intentionally don't close it here.
-        } catch (IOException e) {
-            logger.error("Failed to initialize Git repository", e);
-            throw new RuntimeException("Could not initialize Git repository", e);
-        }
-    }
-
-    /**
-     * Creates a new branch from the current HEAD
-     *
-     * @param branchName the name of the new branch
-     * @return true if branch was created successfully
-     */
-    // TODO git functionality could be on SoftwareProject
-    public boolean createBranch(String branchName) {
-        try {
-            // Check if repository has any commits
-            if (!hasCommits()) {
-                logger.warn("Repository has no commits yet, creating initial commit first");
-                if (!createInitialCommit()) {
-                    logger.error("Failed to create initial commit");
-                    return false;
-                }
-            }
-
-            git.branchCreate()
-                    .setName(branchName)
-                    .call();
-
-            logger.info("Created branch: {}", branchName);
-            return true;
-        } catch (Exception e) {
-            logger.error("Failed to create branch: {}", branchName, e);
-            return false;
-        }
-    }
-
-    private boolean hasCommits() {
-        try {
-            var headRef = repository.exactRef("HEAD");
-            return headRef != null && headRef.getObjectId() != null;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private boolean createInitialCommit() {
-        try {
-            // Add all files and create initial commit
-            git.add().addFilepattern(".").call();
-            git.commit().setMessage("Initial commit").call();
-            logger.info("Created initial commit");
-            return true;
-        } catch (Exception e) {
-            logger.error("Failed to create initial commit", e);
-            return false;
-        }
-    }
-
-    public void checkoutBranch(String branchName) {
-        try {
-            git.checkout()
-                    .setName(branchName)
-                    .call();
-            logger.info("Checked out branch: {}", branchName);
-        } catch (Exception e) {
-            logger.error("Failed to checkout branch: {}", branchName, e);
-        }
-    }
-
-    public String currentBranch() {
-        try {
-            var head = repository.exactRef("HEAD");
-            if (head != null && head.isSymbolic()) {
-                var target = head.getTarget();
-                if (target != null) {
-                    var branchName = target.getName();
-                    if (branchName.startsWith("refs/heads/")) {
-                        return branchName.substring("refs/heads/".length());
-                    } else {
-                        return branchName;
-                    }
-                }
-            }
-            return "unknown";
-        } catch (Exception e) {
-            logger.error("Failed to get current branch", e);
-            return "error";
-        }
-    }
-
-    /**
-     * Creates and checks out a new branch
-     *
-     * @param branchName the name of the new branch
-     * @return true if branch was created and checked out successfully
-     */
-    public boolean createAndCheckoutBranch(String branchName) {
-        try {
-            git.checkout()
-                    .setCreateBranch(true)
-                    .setName(branchName)
-                    .call();
-            logger.info("Created and checked out branch: {}", branchName);
-            return true;
-        } catch (Exception e) {
-            logger.error("Failed to create and checkout branch: {}", branchName, e);
-            return false;
-        }
-    }
-
 
     @Action
     public Domain.MigrationPoints migrationPoints(
@@ -192,20 +61,29 @@ public class ModernizerAgent {
             Domain.MigrationPoints migrationPoints,
             OperationContext context
     ) {
-        var migrations = context.parallelMap(
-                migrationPoints.migrationPoints(),
-                1,
-                mp -> tryToFix(mp, context)
-        );
+        var migrations = new LinkedList<Domain.MigrationReport>();
+        for (var classification : classifications) {
+            logger.info("Processing classification: {} - {}", classification.name(), classification.description());
+
+            var currentBranch = softwareProject.currentBranch();
+            var branchName = context.getAgentProcess().getId() + "_" + classification.name().toLowerCase();
+            var success = softwareProject.createAndCheckoutBranch(branchName);
+            logger.info("Classification branch created: {} - {}", branchName, success);
+            migrations.addAll(context.parallelMap(
+                    migrationPoints.migrationPoints()
+                            .stream()
+                            .filter(mp -> Objects.equals(mp.classificationName(), classification.name())).toList(),
+                    1,
+                    mp -> tryToFix(mp, context)
+            ));
+            softwareProject.checkoutBranch(currentBranch);
+        }
         return new Domain.MigrationsReport(migrations);
     }
 
     private Domain.MigrationReport tryToFix(
             Domain.MigrationPoint migrationPoint,
             OperationContext operationContext) {
-        var currentBranch = currentBranch();
-        var branchName = operationContext.getAgentProcess().getId() + "-embabel-mod-" + modificationCount++;
-        createBranch(branchName);
         var migrationReport = operationContext.ai()
                 .withLlmByRole("best")
                 .withReferences(softwareProject)
@@ -218,21 +96,11 @@ public class ModernizerAgent {
                         )
                 );
         if (migrationReport.success()) {
-            logger.info("Keeping branch {} we created", branchName);
-            migrationReport = migrationReport.withBranch(branchName);
+            softwareProject.commit("Fix: " + migrationPoint.description(), false);
         } else {
-            try {
-                logger.info("Deleting branch {} as migration was not successful", branchName);
-                git.branchDelete()
-                        .setBranchNames(branchName)
-                        .setForce(true)
-                        .call();
-            } catch (Exception e) {
-                logger.error("Failed to delete branch: {}", branchName, e);
-            }
+            logger.info("Reverting branch as migration was not successful");
+            softwareProject.revert();
         }
-        checkoutBranch(currentBranch);
-
         return migrationReport;
     }
 }
