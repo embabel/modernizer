@@ -1,6 +1,8 @@
 package com.embabel.modernizer.agent;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import jakarta.validation.constraints.Null;
 
 import java.util.List;
 
@@ -29,8 +31,14 @@ public abstract class Domain {
     public record MigrationReport(
             MigrationPoint migrationPoint,
             boolean success,
-            String notes
+            String notes,
+            @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+            @Null String branch
     ) {
+        public MigrationReport withBranch(String branch) {
+            return new MigrationReport(migrationPoint, success, notes, branch);
+        }
+
     }
 
     public record MigrationsReport(
