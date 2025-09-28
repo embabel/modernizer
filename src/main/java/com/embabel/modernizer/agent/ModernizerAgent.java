@@ -5,8 +5,6 @@ import com.embabel.agent.api.annotation.Action;
 import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.common.Ai;
 import com.embabel.agent.api.common.OperationContext;
-import com.embabel.agent.domain.io.UserInput;
-import com.embabel.agent.domain.library.code.SoftwareProject;
 import com.embabel.coding.tools.bash.BashTools;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -30,14 +28,11 @@ public class ModernizerAgent {
     );
 
 
-    private SoftwareProject softwareProject = new SoftwareProject(
-            "/Users/rjohnson/dev/qct-reference-app1"
-    );
-
     @Action
     public Domain.MigrationPoints migrationPoints(
-            UserInput userInput,
+            Domain.MigrationTask migrationTask,
             Ai ai) throws Exception {
+        var softwareProject = migrationTask.softwareProject();
         var migrationPoints = ai
                 .withLlmByRole("best")
                 .withReferences(softwareProject)
@@ -46,7 +41,7 @@ public class ModernizerAgent {
                 .createObject(
                         Domain.MigrationPoints.class,
                         Map.of(
-                                "focus", userInput.getContent(),
+                                "notes", migrationTask.notes(),
                                 "classifications", classifications)
                 );
         logger.info("Migration points found: \n{}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(migrationPoints));
@@ -56,9 +51,11 @@ public class ModernizerAgent {
     @AchievesGoal(description = "Modernize codebase")
     @Action
     public Domain.MigrationsReport modernize(
+            Domain.MigrationTask migrationTask,
             Domain.MigrationPoints migrationPoints,
             OperationContext context
     ) {
+        var softwareProject = migrationTask.softwareProject();
         var migrations = new LinkedList<Domain.MigrationReport>();
         for (var classification : classifications) {
             logger.info("Processing classification: {} - {}", classification.name(), classification.description());
@@ -72,7 +69,9 @@ public class ModernizerAgent {
                             .stream()
                             .filter(mp -> Objects.equals(mp.classificationName(), classification.name())).toList(),
                     1,
-                    mp -> tryToFixIndividualMigrationPoint(mp, context.ai())
+                    mp -> tryToFixIndividualMigrationPoint(
+                            migrationTask,
+                            mp, context.ai())
             ));
             softwareProject.checkoutBranch(currentBranch);
         }
@@ -84,8 +83,10 @@ public class ModernizerAgent {
      * Commit if successful, otherwise revert
      */
     private Domain.MigrationReport tryToFixIndividualMigrationPoint(
+            Domain.MigrationTask migrationTask,
             Domain.MigrationPoint migrationPoint,
             Ai ai) {
+        var softwareProject = migrationTask.softwareProject();
         var migrationReport = ai
                 .withLlmByRole("best")
                 .withReferences(softwareProject)

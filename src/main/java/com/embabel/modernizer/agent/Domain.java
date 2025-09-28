@@ -1,5 +1,6 @@
 package com.embabel.modernizer.agent;
 
+import com.embabel.agent.domain.library.code.SoftwareProject;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.validation.constraints.Null;
@@ -8,8 +9,13 @@ import java.util.List;
 
 public abstract class Domain {
 
-    // TODO would include notes and config etc
-    public record Project(String root) {
+    public record MigrationTask(
+            String root,
+            String notes) {
+
+        public SoftwareProject softwareProject() {
+            return new SoftwareProject(root);
+        }
     }
 
     public record MigrationPossibility(String filePath) {
