@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -19,13 +18,6 @@ import java.util.Objects;
 public class ModernizerAgent {
 
     private final Logger logger = LoggerFactory.getLogger(ModernizerAgent.class);
-
-    private final List<Classification> classifications = List.of(
-            new Classification("Legacy", "Code that is outdated and may not follow current best practices."),
-            new Classification("Deprecated", "Code that uses deprecated libraries or frameworks that are no longer supported."),
-            new Classification("Persistence", "Code related to persistence usage"),
-            new Classification("Security", "Code related to security")
-    );
 
 
     @Action
@@ -42,7 +34,7 @@ public class ModernizerAgent {
                         Domain.MigrationPoints.class,
                         Map.of(
                                 "notes", migrationTask.notes(),
-                                "classifications", classifications)
+                                "classifications", migrationTask.classifications())
                 );
         logger.info("Migration points found: \n{}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(migrationPoints));
         return migrationPoints;
@@ -57,10 +49,10 @@ public class ModernizerAgent {
     ) {
         var softwareProject = migrationTask.softwareProject();
         var migrations = new LinkedList<Domain.MigrationReport>();
-        for (var classification : classifications) {
+        for (var classification : migrationTask.classifications()) {
             logger.info("Processing classification: {} - {}", classification.name(), classification.description());
 
-            var currentBranch = softwareProject.currentBranch();
+            var originalBranch = softwareProject.currentBranch();
             var branchName = context.getAgentProcess().getId() + "_" + classification.name().toLowerCase();
             var success = softwareProject.createAndCheckoutBranch(branchName);
             logger.info("Classification branch created: {} - {}", branchName, success);
@@ -73,7 +65,8 @@ public class ModernizerAgent {
                             migrationTask,
                             mp, context.ai())
             ));
-            softwareProject.checkoutBranch(currentBranch);
+            // Go back to the original branch
+            softwareProject.checkoutBranch(originalBranch);
         }
         return new Domain.MigrationsReport(migrations);
     }
@@ -99,9 +92,13 @@ public class ModernizerAgent {
                         )
                 );
         if (migrationReport.success()) {
-            softwareProject.commit("Fix: " + migrationPoint.description(), false);
+            var message = "Fix: " + migrationPoint.description();
+            softwareProject.commit(message, false);
+            logger.info("Committing branch {} - {} as migration was not successful",
+                    softwareProject.currentBranch(), message);
+
         } else {
-            logger.info("Reverting branch as migration was not successful");
+            logger.warn("Reverting branch {} as migration was not successful", softwareProject.currentBranch());
             softwareProject.revert();
         }
         return migrationReport.withBranch(softwareProject.currentBranch());
