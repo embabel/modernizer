@@ -27,7 +27,7 @@ public record ModernizerAgent(
             Ai ai) throws Exception {
         var softwareProject = migrationTask.softwareProject();
         var migrationPoints = ai
-                .withLlmByRole("analyzer")
+                .withLlm(config.analyzer())
                 .withReferences(softwareProject)
                 .withToolObject(new BashTools(softwareProject.getRoot()))
                 .withTemplate("find_migration_points")
@@ -35,9 +35,10 @@ public record ModernizerAgent(
                         Domain.MigrationPoints.class,
                         Map.of(
                                 "notes", migrationTask.notes(),
-                                "classifications", migrationTask.classifications())
+                                "classifications", migrationTask.tasks().classifications())
                 );
-        logger.info("Migration points found: \n{}",
+        logger.info("{} migration points found: \n{}",
+                migrationPoints.migrationPoints().size(),
                 new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(migrationPoints));
         return migrationPoints;
     }
@@ -51,13 +52,13 @@ public record ModernizerAgent(
     ) {
         var softwareProject = migrationTask.softwareProject();
         var migrations = new LinkedList<Domain.MigrationReport>();
-        for (var classification : migrationTask.classifications()) {
+        for (var classification : migrationTask.tasks().classifications()) {
             logger.info("Processing classification: {} - {}", classification.name(), classification.description());
 
             var originalBranch = softwareProject.currentBranch();
             var branchName = context.getAgentProcess().getId() + "_" + classification.name().toLowerCase();
             var success = softwareProject.createAndCheckoutBranch(branchName);
-            logger.info("Classification branch created: {} - {}", branchName, success);
+            logger.info("Classification branch {} created from branch {} - {}", branchName, originalBranch, success);
             migrations.addAll(context.parallelMap(
                     migrationPoints.migrationPoints()
                             .stream()
@@ -68,6 +69,7 @@ public record ModernizerAgent(
                             mp, context.ai())
             ));
             // Go back to the original branch
+            logger.info("Switching back from classification branch {} to original branch {}", branchName, originalBranch);
             softwareProject.checkoutBranch(originalBranch);
         }
         return new Domain.MigrationsReport(migrations);
@@ -83,7 +85,7 @@ public record ModernizerAgent(
             Ai ai) {
         var softwareProject = migrationTask.softwareProject();
         var migrationReport = ai
-                .withLlmByRole("best")
+                .withLlm(config.fixer())
                 .withReferences(softwareProject)
                 .withToolObject(new BashTools(softwareProject.getRoot()))
                 .withTemplate("fix_migration_point")

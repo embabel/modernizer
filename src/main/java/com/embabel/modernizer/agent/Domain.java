@@ -7,35 +7,24 @@ import jakarta.validation.constraints.Null;
 
 import java.util.List;
 
+/**
+ * Container class to avoid proliferation of files
+ */
 public abstract class Domain {
 
     /**
      * Task to migrate a project
-     *
-     * @param root            project root on local machine
-     * @param notes           notes about the task
-     * @param classifications classifications to consider
      */
-    public record MigrationTask(
-            String root,
-            String notes,
-            List<Classification> classifications
-    ) {
-
-        public MigrationTask(
-                String root,
-                String notes
-        ) {
-            this(root, notes, List.of(
-                    new Classification("Legacy", "Code that is outdated and may not follow current best practices."),
-                    new Classification("Deprecated", "Code that uses deprecated libraries or frameworks that are no longer supported."),
-                    new Classification("Persistence", "Code related to persistence usage"),
-                    new Classification("Security", "Code related to security")
-            ));
-        }
-
-        public SoftwareProject softwareProject() {
-            return new SoftwareProject(root);
+    public record MigrationTask(SoftwareProject softwareProject, String notes, TaskList tasks) {
+        /**
+         * Create a new project
+         *
+         * @param root  project root on local machine
+         * @param notes notes about the task
+         * @param tasks tasks to consider
+         */
+        public MigrationTask(String root, String notes, TaskList tasks) {
+            this(new SoftwareProject(root), notes, tasks);
         }
     }
 
