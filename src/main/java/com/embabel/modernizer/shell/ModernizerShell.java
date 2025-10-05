@@ -3,12 +3,16 @@ package com.embabel.modernizer.shell;
 import com.embabel.agent.api.common.autonomy.AgentInvocation;
 import com.embabel.agent.core.AgentPlatform;
 import com.embabel.agent.core.ProcessOptions;
-import com.embabel.modernizer.agent.Domain;
 import com.embabel.modernizer.agent.MigrationCookbook;
 import com.embabel.modernizer.agent.MigrationRecipe;
+import com.embabel.modernizer.entity.MigrationJob;
+import com.embabel.modernizer.entity.MigrationReport;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
+
+import java.util.List;
+import java.util.UUID;
 
 @ShellComponent
 record ModernizerShell(AgentPlatform agentPlatform) {
@@ -23,9 +27,10 @@ record ModernizerShell(AgentPlatform agentPlatform) {
                         .verbosity(v -> v.showPrompts(true))
                         .listener(new ShowCostListener(30))
                         .build())
-                .build(Domain.MigrationsReport.class)
+                .build(List.class)
                 .invoke(
-                        new Domain.MigrationJob(
+                        new MigrationJob(
+                                UUID.randomUUID().toString(),
                                 projectPath,
                                 """
                                         Don't suggest anything risky or address problems not related to older code
@@ -39,7 +44,8 @@ record ModernizerShell(AgentPlatform agentPlatform) {
     String fixLogging(
             @ShellOption(defaultValue = "/Users/rjohnson/dev/embabel.com/embabel-agent") String projectPath
     ) {
-        var customMigration = new Domain.MigrationJob(
+        var customMigration = new MigrationJob(
+                UUID.randomUUID().toString(),
                 projectPath,
                 """
                         Look only for logging classification
@@ -49,7 +55,7 @@ record ModernizerShell(AgentPlatform agentPlatform) {
                                 "Logger.log statements should use {} placeholders not literals")));
         var migrationsReport = AgentInvocation.builder(agentPlatform)
                 .options(ProcessOptions.builder().verbosity(v -> v.showPrompts(true)).build())
-                .build(Domain.MigrationsReport.class)
+                .build(List.class)
                 .invoke(customMigration);
         return migrationsReport + "";
     }

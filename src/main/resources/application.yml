@@ -1,3 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:hsqldb:file:./data/modernizer;shutdown=true
+    username: sa
+    password:
+    driver-class-name: org.hsqldb.jdbc.JDBCDriver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.HSQLDialect
+
 modernizer:
   analyzer:
     model: claude-3-7-sonnet-latest

@@ -6,11 +6,14 @@ import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.common.Ai;
 import com.embabel.agent.api.common.OperationContext;
 import com.embabel.coding.tools.bash.BashTools;
+import com.embabel.modernizer.entity.MigrationJob;
+import com.embabel.modernizer.entity.MigrationReport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -22,8 +25,8 @@ public record ModernizerAgent(
     private final static Logger logger = LoggerFactory.getLogger(ModernizerAgent.class);
 
     @Action
-    public Domain.MigrationPoints migrationPoints(
-            Domain.MigrationJob migrationJob,
+    public MigrationPoints migrationPoints(
+            MigrationJob migrationJob,
             Ai ai) throws Exception {
         var softwareProject = migrationJob.softwareProject();
         var migrationPoints = ai
@@ -32,9 +35,9 @@ public record ModernizerAgent(
                 .withToolObject(new BashTools(softwareProject.getRoot()))
                 .withTemplate("find_migration_points")
                 .createObject(
-                        Domain.MigrationPoints.class,
+                        MigrationPoints.class,
                         Map.of(
-                                "notes", migrationJob.notes(),
+                                "notes", migrationJob.getNotes(),
                                 "classifications", migrationJob.cookbook().recipes())
                 );
         logger.info("{} migration points found: \n{}",
@@ -45,13 +48,13 @@ public record ModernizerAgent(
 
     @AchievesGoal(description = "Modernize codebase")
     @Action
-    public Domain.MigrationsReport modernize(
-            Domain.MigrationJob migrationJob,
-            Domain.MigrationPoints migrationPoints,
+    public List<MigrationReport> modernize(
+            MigrationJob migrationJob,
+            MigrationPoints migrationPoints,
             OperationContext context
     ) {
         var softwareProject = migrationJob.softwareProject();
-        var migrations = new LinkedList<Domain.MigrationReport>();
+        var migrations = new LinkedList<MigrationReport>();
         for (var classification : migrationJob.cookbook().recipes()) {
             logger.info("Processing classification: {} - {}", classification.id(), classification.description());
 
@@ -72,16 +75,16 @@ public record ModernizerAgent(
             logger.info("Switching back from classification branch {} to original branch {}", branchName, originalBranch);
             softwareProject.checkoutBranch(originalBranch);
         }
-        return new Domain.MigrationsReport(migrations);
+        return migrations;
     }
 
     /**
      * Try to fix an individual migration point
      * Commit if successful, otherwise revert
      */
-    private Domain.MigrationReport tryToFixIndividualMigrationPoint(
-            Domain.MigrationJob migrationJob,
-            Domain.MigrationPoint migrationPoint,
+    private MigrationReport tryToFixIndividualMigrationPoint(
+            MigrationJob migrationJob,
+            MigrationPointDto migrationPoint,
             Ai ai) {
         var softwareProject = migrationJob.softwareProject();
         var migrationReport = ai
@@ -90,15 +93,15 @@ public record ModernizerAgent(
                 .withToolObject(new BashTools(softwareProject.getRoot()))
                 .withTemplate("fix_migration_point")
                 .createObject(
-                        Domain.MigrationReport.class,
+                        MigrationReport.class,
                         Map.of(
                                 "migrationPoint", migrationPoint
                         )
                 );
-        if (migrationReport.success()) {
+        if (migrationReport.isSuccess()) {
             var message = "Fix: " + migrationPoint.description();
             softwareProject.commit(message, false);
-            logger.info("Committing branch {} - {} as migration was not successful",
+            logger.info("Committing branch {} - {} as migration was successful",
                     softwareProject.currentBranch(), message);
 
         } else {
