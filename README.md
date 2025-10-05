@@ -16,21 +16,9 @@
 
 &nbsp;&nbsp;&nbsp;&nbsp;
 
-# Generated Agent Project
+# Project modernizer
 
-Starting point for your own agent development using the [Embabel framework](https://github.com/embabel/embabel-agent).
-
-Add your magic here!
-
-Illustrates:
-
-- An injected demo showing how any Spring component can be injected with an Embabel `Ai` instance to enable it to
-  perform LLM operations.
-- A simple agent
-- Unit tests for an agent verifying prompts and hyperparameters
-
-> For the Kotlin equivalent, see
-> our [Kotlin agent template](https://github.com/embabel/kotlin-agent-template).
+Modernizes codebases.
 
 # Running
 
@@ -39,11 +27,6 @@ Run the shell script to start Embabel under Spring Shell:
 ```bash
 ./scripts/shell.sh
 ```
-
-There is a single example
-agent, [WriteAndReviewAgent](./src/main/java/com/embabel/template/agent/WriteAndReviewAgent.java).
-It uses one LLM with a high temperature and creative persona to write a story based on your input,
-then another LLM with a low temperature and different persona to review the story.
 
 When the Embabel shell comes up, invoke the story agent like this:
 

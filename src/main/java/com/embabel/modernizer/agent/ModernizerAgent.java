@@ -19,14 +19,13 @@ public class ModernizerAgent {
 
     private final Logger logger = LoggerFactory.getLogger(ModernizerAgent.class);
 
-
     @Action
     public Domain.MigrationPoints migrationPoints(
             Domain.MigrationTask migrationTask,
             Ai ai) throws Exception {
         var softwareProject = migrationTask.softwareProject();
         var migrationPoints = ai
-                .withLlmByRole("best")
+                .withLlmByRole("analyzer")
                 .withReferences(softwareProject)
                 .withToolObject(new BashTools(softwareProject.getRoot()))
                 .withTemplate("find_migration_points")
@@ -36,7 +35,8 @@ public class ModernizerAgent {
                                 "notes", migrationTask.notes(),
                                 "classifications", migrationTask.classifications())
                 );
-        logger.info("Migration points found: \n{}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(migrationPoints));
+        logger.info("Migration points found: \n{}",
+                new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(migrationPoints));
         return migrationPoints;
     }
 
