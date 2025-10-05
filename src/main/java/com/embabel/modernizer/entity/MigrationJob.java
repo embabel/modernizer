@@ -1,8 +1,6 @@
 package com.embabel.modernizer.entity;
 
 import com.embabel.agent.domain.library.code.SoftwareProject;
-import com.embabel.modernizer.agent.MigrationCookbook;
-import com.embabel.modernizer.agent.MigrationRecipe;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -29,7 +27,9 @@ public class MigrationJob {
     @Column(columnDefinition = "CLOB")
     private String notes;
 
-    private String cookbookName;
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "cookbook_id")
+    private MigrationCookbook cookbook;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -45,21 +45,11 @@ public class MigrationJob {
     @OneToMany(mappedBy = "migrationJob", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MigrationPoints> migrationPointsSets = new ArrayList<>();
 
-    // Transient fields - not persisted
+    // Transient field - not persisted
     @Transient
     private SoftwareProject softwareProject;
 
-    @Transient
-    private MigrationCookbook cookbook;
-
     public MigrationJob() {
-    }
-
-    public MigrationJob(String jobId, String projectRoot, String notes, String cookbookName) {
-        this.jobId = jobId;
-        this.projectRoot = projectRoot;
-        this.notes = notes;
-        this.cookbookName = cookbookName;
     }
 
     public MigrationJob(String jobId, String projectRoot, String notes, MigrationCookbook cookbook) {
@@ -67,7 +57,6 @@ public class MigrationJob {
         this.projectRoot = projectRoot;
         this.notes = notes;
         this.cookbook = cookbook;
-        this.cookbookName = cookbook != null ? serializeCookbook(cookbook) : null;
     }
 
     // Getters and setters
@@ -103,12 +92,12 @@ public class MigrationJob {
         this.notes = notes;
     }
 
-    public String getCookbookName() {
-        return cookbookName;
+    public MigrationCookbook getCookbook() {
+        return cookbook;
     }
 
-    public void setCookbookName(String cookbookName) {
-        this.cookbookName = cookbookName;
+    public void setCookbook(MigrationCookbook cookbook) {
+        this.cookbook = cookbook;
     }
 
     public Instant getCreatedAt() {
@@ -159,35 +148,11 @@ public class MigrationJob {
         migrationPointsSet.setMigrationJob(this);
     }
 
-    // Lazy getters for transient fields
+    // Lazy getter for transient field
     public SoftwareProject softwareProject() {
         if (softwareProject == null && projectRoot != null) {
             softwareProject = new SoftwareProject(projectRoot);
         }
         return softwareProject;
-    }
-
-    public MigrationCookbook cookbook() {
-        if (cookbook == null && cookbookName != null) {
-            cookbook = deserializeCookbook(cookbookName);
-        }
-        return cookbook;
-    }
-
-    // Serialization helpers
-    private String serializeCookbook(MigrationCookbook cookbook) {
-        if (cookbook == null || cookbook.recipes() == null) {
-            return null;
-        }
-        return cookbook.recipes().stream()
-                .map(MigrationRecipe::id)
-                .reduce((a, b) -> a + "," + b)
-                .orElse(null);
-    }
-
-    private MigrationCookbook deserializeCookbook(String cookbookName) {
-        // For now, return null - cookbook reconstruction would need recipe lookup
-        // This could be enhanced to look up recipes by ID
-        return null;
     }
 }

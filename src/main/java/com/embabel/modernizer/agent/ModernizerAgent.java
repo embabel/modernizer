@@ -8,6 +8,7 @@ import com.embabel.agent.api.common.OperationContext;
 import com.embabel.coding.tools.bash.BashTools;
 import com.embabel.modernizer.entity.MigrationJob;
 import com.embabel.modernizer.entity.MigrationReport;
+import com.embabel.modernizer.service.MigrationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,8 @@ import java.util.Objects;
 
 @Agent(description = "Code modernization agent")
 public record ModernizerAgent(
-        ModernizerConfig config
+        ModernizerConfig config,
+        MigrationService service
 ) {
 
     private final static Logger logger = LoggerFactory.getLogger(ModernizerAgent.class);
@@ -38,7 +40,7 @@ public record ModernizerAgent(
                         MigrationPoints.class,
                         Map.of(
                                 "notes", migrationJob.getNotes(),
-                                "classifications", migrationJob.cookbook().recipes())
+                                "classifications", migrationJob.getCookbook().getRecipes())
                 );
         logger.info("{} migration points found: \n{}",
                 migrationPoints.migrationPoints().size(),
@@ -55,17 +57,17 @@ public record ModernizerAgent(
     ) {
         var softwareProject = migrationJob.softwareProject();
         var migrations = new LinkedList<MigrationReport>();
-        for (var classification : migrationJob.cookbook().recipes()) {
-            logger.info("Processing classification: {} - {}", classification.id(), classification.description());
+        for (var classification : migrationJob.getCookbook().getRecipes()) {
+            logger.info("Processing classification: {} - {}", classification.getRecipeId(), classification.getDescription());
 
             var originalBranch = softwareProject.currentBranch();
-            var branchName = context.getAgentProcess().getId() + "_" + classification.id().toLowerCase();
+            var branchName = context.getAgentProcess().getId() + "_" + classification.getRecipeId().toLowerCase();
             var success = softwareProject.createAndCheckoutBranch(branchName);
             logger.info("Classification branch {} created from branch {} - {}", branchName, originalBranch, success);
             migrations.addAll(context.parallelMap(
                     migrationPoints.migrationPoints()
                             .stream()
-                            .filter(mp -> Objects.equals(mp.recipeId(), classification.id())).toList(),
+                            .filter(mp -> Objects.equals(mp.recipeId(), classification.getRecipeId())).toList(),
                     1,
                     mp -> tryToFixIndividualMigrationPoint(
                             migrationJob,

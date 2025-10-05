@@ -3,9 +3,9 @@ package com.embabel.modernizer.shell;
 import com.embabel.agent.api.common.autonomy.AgentInvocation;
 import com.embabel.agent.core.AgentPlatform;
 import com.embabel.agent.core.ProcessOptions;
-import com.embabel.modernizer.agent.MigrationCookbook;
-import com.embabel.modernizer.agent.MigrationRecipe;
+import com.embabel.modernizer.entity.MigrationCookbook;
 import com.embabel.modernizer.entity.MigrationJob;
+import com.embabel.modernizer.entity.MigrationRecipe;
 import com.embabel.modernizer.entity.MigrationReport;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -51,6 +51,7 @@ record ModernizerShell(AgentPlatform agentPlatform) {
                         Look only for logging classification
                         """,
                 new MigrationCookbook(
+                        "LOGGING_FIX",
                         new MigrationRecipe("Logging",
                                 "Logger.log statements should use {} placeholders not literals")));
         var migrationsReport = AgentInvocation.builder(agentPlatform)
