@@ -17,11 +17,14 @@ package com.embabel.modernizer;
 
 import com.embabel.agent.config.annotation.EnableAgents;
 import com.embabel.agent.config.annotation.LoggingThemes;
+import com.embabel.modernizer.agent.ModernizerConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 
 @SpringBootApplication
+@EnableConfigurationProperties(ModernizerConfig.class)
 @EnableAgents(loggingTheme = LoggingThemes.COLOSSUS)
 class ModernizerApplication {
     public static void main(String[] args) {

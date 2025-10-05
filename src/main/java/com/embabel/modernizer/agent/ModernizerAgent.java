@@ -15,9 +15,11 @@ import java.util.Map;
 import java.util.Objects;
 
 @Agent(description = "Code modernization agent")
-public class ModernizerAgent {
+public record ModernizerAgent(
+        ModernizerConfig config
+) {
 
-    private final Logger logger = LoggerFactory.getLogger(ModernizerAgent.class);
+    private final static Logger logger = LoggerFactory.getLogger(ModernizerAgent.class);
 
     @Action
     public Domain.MigrationPoints migrationPoints(
