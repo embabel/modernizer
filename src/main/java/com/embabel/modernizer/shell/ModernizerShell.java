@@ -3,9 +3,9 @@ package com.embabel.modernizer.shell;
 import com.embabel.agent.api.common.autonomy.AgentInvocation;
 import com.embabel.agent.core.AgentPlatform;
 import com.embabel.agent.core.ProcessOptions;
-import com.embabel.modernizer.agent.Classification;
 import com.embabel.modernizer.agent.Domain;
-import com.embabel.modernizer.agent.TaskList;
+import com.embabel.modernizer.agent.MigrationCookbook;
+import com.embabel.modernizer.agent.MigrationRecipe;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
@@ -25,13 +25,13 @@ record ModernizerShell(AgentPlatform agentPlatform) {
                         .build())
                 .build(Domain.MigrationsReport.class)
                 .invoke(
-                        new Domain.MigrationTask(
+                        new Domain.MigrationJob(
                                 projectPath,
                                 """
                                         Don't suggest anything risky or address problems not related to older code
                                         LOOK ONLY UNDER the spring-mysql-app directory
                                         """,
-                                TaskList.MODERNIZE_JAVA));
+                                MigrationCookbook.MODERNIZE_JAVA));
         return migrationsReport + "";
     }
 
@@ -39,13 +39,13 @@ record ModernizerShell(AgentPlatform agentPlatform) {
     String fixLogging(
             @ShellOption(defaultValue = "/Users/rjohnson/dev/embabel.com/embabel-agent") String projectPath
     ) {
-        var customMigration = new Domain.MigrationTask(
+        var customMigration = new Domain.MigrationJob(
                 projectPath,
                 """
                         Look only for logging classification
                         """,
-                new TaskList(
-                        new Classification("Logging",
+                new MigrationCookbook(
+                        new MigrationRecipe("Logging",
                                 "Logger.log statements should use {} placeholders not literals")));
         var migrationsReport = AgentInvocation.builder(agentPlatform)
                 .options(ProcessOptions.builder().verbosity(v -> v.showPrompts(true)).build())

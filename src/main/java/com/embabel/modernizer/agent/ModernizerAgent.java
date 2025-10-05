@@ -23,9 +23,9 @@ public record ModernizerAgent(
 
     @Action
     public Domain.MigrationPoints migrationPoints(
-            Domain.MigrationTask migrationTask,
+            Domain.MigrationJob migrationJob,
             Ai ai) throws Exception {
-        var softwareProject = migrationTask.softwareProject();
+        var softwareProject = migrationJob.softwareProject();
         var migrationPoints = ai
                 .withLlm(config.analyzer())
                 .withReferences(softwareProject)
@@ -34,8 +34,8 @@ public record ModernizerAgent(
                 .createObject(
                         Domain.MigrationPoints.class,
                         Map.of(
-                                "notes", migrationTask.notes(),
-                                "classifications", migrationTask.tasks().classifications())
+                                "notes", migrationJob.notes(),
+                                "classifications", migrationJob.cookbook().recipes())
                 );
         logger.info("{} migration points found: \n{}",
                 migrationPoints.migrationPoints().size(),
@@ -46,26 +46,26 @@ public record ModernizerAgent(
     @AchievesGoal(description = "Modernize codebase")
     @Action
     public Domain.MigrationsReport modernize(
-            Domain.MigrationTask migrationTask,
+            Domain.MigrationJob migrationJob,
             Domain.MigrationPoints migrationPoints,
             OperationContext context
     ) {
-        var softwareProject = migrationTask.softwareProject();
+        var softwareProject = migrationJob.softwareProject();
         var migrations = new LinkedList<Domain.MigrationReport>();
-        for (var classification : migrationTask.tasks().classifications()) {
-            logger.info("Processing classification: {} - {}", classification.name(), classification.description());
+        for (var classification : migrationJob.cookbook().recipes()) {
+            logger.info("Processing classification: {} - {}", classification.id(), classification.description());
 
             var originalBranch = softwareProject.currentBranch();
-            var branchName = context.getAgentProcess().getId() + "_" + classification.name().toLowerCase();
+            var branchName = context.getAgentProcess().getId() + "_" + classification.id().toLowerCase();
             var success = softwareProject.createAndCheckoutBranch(branchName);
             logger.info("Classification branch {} created from branch {} - {}", branchName, originalBranch, success);
             migrations.addAll(context.parallelMap(
                     migrationPoints.migrationPoints()
                             .stream()
-                            .filter(mp -> Objects.equals(mp.classificationName(), classification.name())).toList(),
+                            .filter(mp -> Objects.equals(mp.recipeId(), classification.id())).toList(),
                     1,
                     mp -> tryToFixIndividualMigrationPoint(
-                            migrationTask,
+                            migrationJob,
                             mp, context.ai())
             ));
             // Go back to the original branch
@@ -80,10 +80,10 @@ public record ModernizerAgent(
      * Commit if successful, otherwise revert
      */
     private Domain.MigrationReport tryToFixIndividualMigrationPoint(
-            Domain.MigrationTask migrationTask,
+            Domain.MigrationJob migrationJob,
             Domain.MigrationPoint migrationPoint,
             Ai ai) {
-        var softwareProject = migrationTask.softwareProject();
+        var softwareProject = migrationJob.softwareProject();
         var migrationReport = ai
                 .withLlm(config.fixer())
                 .withReferences(softwareProject)

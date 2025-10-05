@@ -23,9 +23,9 @@ BE THOROUGH AND USE TOOLS AT YOUR DISPOSAL.
 
 Focus on: {{ focus }}
 
-You must only consider the following classifications for your migration points.
+You must only consider the following migrationRecipes for your migration points.
 Choose them by name.
 
-{% for c in classifications %}
+{% for c in migrationRecipes %}
     - {{ c.name() }}: {{ c.description() }}
 {% endfor %}

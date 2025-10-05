@@ -15,16 +15,20 @@ public abstract class Domain {
     /**
      * Task to migrate a project
      */
-    public record MigrationTask(SoftwareProject softwareProject, String notes, TaskList tasks) {
+    public record MigrationJob(
+            SoftwareProject
+            softwareProject,
+            String notes,
+            MigrationCookbook cookbook) {
         /**
          * Create a new project
          *
-         * @param root  project root on local machine
-         * @param notes notes about the task
-         * @param tasks tasks to consider
+         * @param root     project root on local machine
+         * @param notes    notes about the task
+         * @param cookbook cookbook to consider
          */
-        public MigrationTask(String root, String notes, TaskList tasks) {
-            this(new SoftwareProject(root), notes, tasks);
+        public MigrationJob(String root, String notes, MigrationCookbook cookbook) {
+            this(new SoftwareProject(root), notes, cookbook);
         }
     }
 
@@ -33,12 +37,12 @@ public abstract class Domain {
      *
      * @param filePath
      * @param description
-     * @param classificationName
+     * @param recipeId
      */
     public record MigrationPoint(
             String filePath,
             String description,
-            String classificationName) {
+            String recipeId) {
     }
 
     public record MigrationPoints(
@@ -63,6 +67,9 @@ public abstract class Domain {
             @JsonProperty(access = JsonProperty.Access.READ_ONLY)
             @Null String branch
     ) {
+        /**
+         * Return a new instance identifying a branch that was used for this migration
+         */
         public MigrationReport withBranch(String branch) {
             return new MigrationReport(migrationPoint, success, notes, branch);
         }
