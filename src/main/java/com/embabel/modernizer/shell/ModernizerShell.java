@@ -6,17 +6,22 @@ import com.embabel.agent.core.ProcessOptions;
 import com.embabel.modernizer.agent.Domain;
 import com.embabel.modernizer.agent.MigrationCookbook;
 import com.embabel.modernizer.agent.MigrationRecipe;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
+import java.io.IOException;
+
 @ShellComponent
-record ModernizerShell(AgentPlatform agentPlatform) {
+record ModernizerShell(
+        AgentPlatform agentPlatform,
+        ObjectMapper objectMapper) {
 
     @ShellMethod("Modernize a codebase on the local machine")
     String modernize(
             @ShellOption(defaultValue = "/Users/rjohnson/dev/qct-reference-app1") String projectPath
-    ) {
+    ) throws IOException {
         var migrationsReport = AgentInvocation
                 .builder(agentPlatform)
                 .options(ProcessOptions.builder()
@@ -34,7 +39,14 @@ record ModernizerShell(AgentPlatform agentPlatform) {
                                         IMPORTANT: RETURN AFTER YOU'VE FOUND 2 problems
                                         """,
                                 MigrationCookbook.MODERNIZE_JAVA));
-        return migrationsReport + "";
+
+        var branches = migrationsReport.branchesCreated().stream()
+                .map(b -> "\t" + b)
+                .collect(java.util.stream.Collectors.joining("\n"));
+
+        return "Branches created (" + migrationsReport.branchesCreated().size() + "):\n" +
+                branches + "\n\n" +
+                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(migrationsReport);
     }
 
     @ShellMethod("fix logging")

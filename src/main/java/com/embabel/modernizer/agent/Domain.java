@@ -84,6 +84,14 @@ public abstract class Domain {
     public record MigrationsReport(
             List<MigrationReport> migration
     ) {
+
+        public List<String> branchesCreated() {
+            return migration.stream()
+                    .map(MigrationReport::branch)
+                    .distinct()
+                    .sorted()
+                    .toList();
+        }
     }
 }
 
