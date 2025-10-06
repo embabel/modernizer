@@ -11,3 +11,5 @@ embabel-agent-api/src/main/resources/mcp/**
 .claude
 
 **/*.log
+
+data

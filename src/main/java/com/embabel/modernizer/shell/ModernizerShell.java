@@ -29,7 +29,9 @@ record ModernizerShell(AgentPlatform agentPlatform) {
                                 projectPath,
                                 """
                                         Don't suggest anything risky or address problems not related to older code
+                                        
                                         LOOK ONLY UNDER the spring-mysql-app directory
+                                        IMPORTANT: RETURN AFTER YOU'VE FOUND 2 problems
                                         """,
                                 MigrationCookbook.MODERNIZE_JAVA));
         return migrationsReport + "";

@@ -17,15 +17,12 @@ BE THOROUGH AND USE TOOLS AT YOUR DISPOSAL.
 
 {% include "elements/targets" %}
 
-{#=============================#}
-{#GIVE UP ONCe you've found 3#}
-{#=============================#}
+IMPORTANT NOTES:
+<important-notes>{{ notes }}</important-notes>
 
-Focus on: {{ focus }}
+You must only consider the following migration recipes for your migration points.
+Choose them by name in the 'name' field of your returned list:
 
-You must only consider the following migrationRecipes for your migration points.
-Choose them by name.
-
-{% for c in migrationRecipes %}
+{% for c in recipes %}
     - {{ c.name() }}: {{ c.description() }}
 {% endfor %}

@@ -37,12 +37,12 @@ public abstract class Domain {
      *
      * @param filePath
      * @param description
-     * @param recipeId
+     * @param recipeName
      */
     public record MigrationPoint(
             String filePath,
             String description,
-            String recipeId) {
+            String recipeName) {
     }
 
     public record MigrationPoints(

@@ -35,9 +35,10 @@ public record ModernizerAgent(
                         Domain.MigrationPoints.class,
                         Map.of(
                                 "notes", migrationJob.notes(),
-                                "classifications", migrationJob.cookbook().recipes())
+                                "recipes", migrationJob.cookbook().recipes()),
+                        "find_migration_points"
                 );
-        logger.info("{} migration points found: \n{}",
+        logger.info("{} migration points found:\n{}",
                 migrationPoints.migrationPoints().size(),
                 new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(migrationPoints));
         return migrationPoints;
@@ -52,24 +53,32 @@ public record ModernizerAgent(
     ) {
         var softwareProject = migrationJob.softwareProject();
         var migrations = new LinkedList<Domain.MigrationReport>();
-        for (var classification : migrationJob.cookbook().recipes()) {
-            logger.info("Processing classification: {} - {}", classification.id(), classification.description());
+        for (var recipe : migrationJob.cookbook().recipes()) {
+            var recipeHits = migrationPoints.migrationPoints()
+                    .stream()
+                    .filter(mp -> Objects.equals(mp.recipeName(), recipe.name())).toList();
+
+            if (recipeHits.isEmpty()) {
+                logger.info("No migration points found for recipe: {} - {}, skipping",
+                        recipe.name(), recipe.description());
+                continue;
+            }
+            logger.info("Processing recipe: {} - {}", recipe.name(), recipe.description());
 
             var originalBranch = softwareProject.currentBranch();
-            var branchName = context.getAgentProcess().getId() + "_" + classification.id().toLowerCase();
+            var branchName = context.getAgentProcess().getId() + "_" + recipe.name().toLowerCase();
             var success = softwareProject.createAndCheckoutBranch(branchName);
-            logger.info("Classification branch {} created from branch {} - {}", branchName, originalBranch, success);
+            logger.info("Recipe branch {} created from branch {} - {}", branchName, originalBranch, success);
             migrations.addAll(context.parallelMap(
                     migrationPoints.migrationPoints()
                             .stream()
-                            .filter(mp -> Objects.equals(mp.recipeId(), classification.id())).toList(),
+                            .filter(mp -> Objects.equals(mp.recipeName(), recipe.name())).toList(),
                     1,
                     mp -> tryToFixIndividualMigrationPoint(
                             migrationJob,
                             mp, context.ai())
             ));
-            // Go back to the original branch
-            logger.info("Switching back from classification branch {} to original branch {}", branchName, originalBranch);
+            logger.info("Switching back from recipe branch {} to original branch {}", branchName, originalBranch);
             softwareProject.checkoutBranch(originalBranch);
         }
         return new Domain.MigrationsReport(migrations);
@@ -93,7 +102,8 @@ public record ModernizerAgent(
                         Domain.MigrationReport.class,
                         Map.of(
                                 "migrationPoint", migrationPoint
-                        )
+                        ),
+                        "fix_migration_point"
                 );
         if (migrationReport.success()) {
             var message = "Fix: " + migrationPoint.description();
