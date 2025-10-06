@@ -15,7 +15,9 @@ spring:
 
 modernizer:
   analyzer:
-    model: claude-3-7-sonnet-latest
+    model: gpt-4.1-mini
+  #    model: claude-3-7-sonnet-latest
+
 
   fixer:
     model: gpt-4.1-mini

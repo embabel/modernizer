@@ -1,6 +1,5 @@
 package com.embabel.modernizer.entity;
 
-import com.embabel.modernizer.agent.MigrationPointDto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Null;
@@ -22,9 +21,9 @@ public class MigrationReport {
     @JoinColumn(nullable = true)
     private MigrationPoint migrationPoint;
 
-    // Transient field for AI-generated DTO data
-    @Transient
-    private MigrationPointDto migrationPointDto;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "migrations_report_id")
+    private MigrationsReport migrationsReport;
 
     @Column(nullable = false)
     private boolean success;
@@ -51,24 +50,6 @@ public class MigrationReport {
         this.success = success;
         this.notes = notes;
         this.branch = branch;
-    }
-
-    // Constructor for AI-generated report with DTO
-    public MigrationReport(MigrationPointDto migrationPointDto, boolean success, String notes, String branch) {
-        this.migrationPointDto = migrationPointDto;
-        this.success = success;
-        this.notes = notes;
-        this.branch = branch;
-    }
-
-    public MigrationReport withBranch(String branch) {
-        MigrationReport report = new MigrationReport(this.migrationPointDto, this.success, this.notes, branch);
-        report.setMigrationPoint(this.migrationPoint);
-        return report;
-    }
-
-    public MigrationPointDto migrationPointDto() {
-        return migrationPointDto;
     }
 
     // Getters and setters
@@ -116,15 +97,11 @@ public class MigrationReport {
         return createdAt;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public Instant getUpdatedAt() {
         return updatedAt;
     }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    
+    void setMigrationsReport(MigrationsReport migrationsReport) {
+        this.migrationsReport = migrationsReport;
     }
 }

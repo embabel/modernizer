@@ -11,7 +11,6 @@ import java.util.List;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "migration_point")
 public class MigrationPoint {
 
     @Id
@@ -19,24 +18,23 @@ public class MigrationPoint {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "migration_job_id", nullable = false)
-    private MigrationJob migrationJob;
+    @JoinColumn(name = "migration_points_id", nullable = false)
+    private MigrationPoints migrationPoints;
 
-    @Column(name = "file_path", nullable = false, length = 1024)
+    @Column(nullable = false, length = 1024)
     private String filePath;
 
-    @Column(name = "description", columnDefinition = "CLOB")
+    @Column(columnDefinition = "CLOB")
     private String description;
 
-    @Column(name = "recipe_id")
     private String recipeId;
 
     @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
+    @Column(nullable = false)
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "migrationPoint", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -58,14 +56,6 @@ public class MigrationPoint {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public MigrationJob getMigrationJob() {
-        return migrationJob;
-    }
-
-    public void setMigrationJob(MigrationJob migrationJob) {
-        this.migrationJob = migrationJob;
     }
 
     public String getFilePath() {
@@ -96,18 +86,11 @@ public class MigrationPoint {
         return createdAt;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
 
     public Instant getUpdatedAt() {
         return updatedAt;
     }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
+    
     public List<MigrationReport> getMigrationReports() {
         return migrationReports;
     }
@@ -125,5 +108,13 @@ public class MigrationPoint {
     public void removeMigrationReport(MigrationReport migrationReport) {
         migrationReports.remove(migrationReport);
         migrationReport.setMigrationPoint(null);
+    }
+
+    public MigrationPoints getMigrationPoints() {
+        return migrationPoints;
+    }
+
+    public void setMigrationPoints(MigrationPoints migrationPoints) {
+        this.migrationPoints = migrationPoints;
     }
 }

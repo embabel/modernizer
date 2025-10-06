@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface MigrationPointRepository extends JpaRepository<MigrationPoint, Long> {
 
-    List<MigrationPoint> findByMigrationJobId(Long migrationJobId);
+    List<MigrationPoint> findByMigrationPointsId(Long migrationPointsId);
 }

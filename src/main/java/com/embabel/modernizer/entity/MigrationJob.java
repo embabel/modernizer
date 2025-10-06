@@ -27,7 +27,7 @@ public class MigrationJob {
     @Column(columnDefinition = "CLOB")
     private String notes;
 
-    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToOne
     @JoinColumn(name = "cookbook_id")
     private MigrationCookbook cookbook;
 
@@ -39,11 +39,11 @@ public class MigrationJob {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    @OneToMany(mappedBy = "migrationJob", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MigrationPoint> migrationPoints = new ArrayList<>();
+    @OneToOne(mappedBy = "migrationJob", cascade = CascadeType.ALL, orphanRemoval = true)
+    private MigrationPoints migrationPoints;
 
-    @OneToMany(mappedBy = "migrationJob", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MigrationPoints> migrationPointsSets = new ArrayList<>();
+    @OneToOne(mappedBy = "migrationJob", cascade = CascadeType.ALL, orphanRemoval = true)
+    private MigrationsReport migrationsReport;
 
     // Transient field - not persisted
     @Transient
@@ -116,36 +116,26 @@ public class MigrationJob {
         this.updatedAt = updatedAt;
     }
 
-    public List<MigrationPoint> getMigrationPoints() {
+    public MigrationPoints getMigrationPoints() {
         return migrationPoints;
     }
 
-    public void setMigrationPoints(List<MigrationPoint> migrationPoints) {
+    public void setMigrationPoints(MigrationPoints migrationPoints) {
         this.migrationPoints = migrationPoints;
+        if (migrationPoints != null) {
+            migrationPoints.setMigrationJob(this);
+        }
     }
 
-    // Helper methods for bidirectional relationship
-    public void addMigrationPoint(MigrationPoint migrationPoint) {
-        migrationPoints.add(migrationPoint);
-        migrationPoint.setMigrationJob(this);
+    public MigrationsReport getMigrationsReport() {
+        return migrationsReport;
     }
 
-    public void removeMigrationPoint(MigrationPoint migrationPoint) {
-        migrationPoints.remove(migrationPoint);
-        migrationPoint.setMigrationJob(null);
-    }
-
-    public List<MigrationPoints> getMigrationPointsSets() {
-        return migrationPointsSets;
-    }
-
-    public void setMigrationPointsSets(List<MigrationPoints> migrationPointsSets) {
-        this.migrationPointsSets = migrationPointsSets;
-    }
-
-    public void addMigrationPointsSet(MigrationPoints migrationPointsSet) {
-        migrationPointsSets.add(migrationPointsSet);
-        migrationPointsSet.setMigrationJob(this);
+    public void setMigrationsReport(MigrationsReport migrationsReport) {
+        this.migrationsReport = migrationsReport;
+        if (migrationsReport != null) {
+            migrationsReport.setMigrationJob(this);
+        }
     }
 
     // Lazy getter for transient field

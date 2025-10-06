@@ -1,12 +1,14 @@
 package com.embabel.modernizer.entity;
 
-import com.embabel.modernizer.agent.MigrationPointDto;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -16,10 +18,14 @@ public class MigrationPoints {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "migration_job_id", nullable = false)
     private MigrationJob migrationJob;
 
+    @OneToMany(mappedBy = "migrationPoints", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MigrationPoint> migrationPoints = new ArrayList<>();
+
+    @JsonPropertyDescription("High-level overview of the migration points")
     @Column(columnDefinition = "CLOB")
     private String overview;
 
@@ -31,34 +37,16 @@ public class MigrationPoints {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    // Note: migration points themselves are already stored in MigrationPoint entity
-    // This entity just stores the overview and links to the job
-
     public MigrationPoints() {
     }
 
-    public MigrationPoints(MigrationJob migrationJob, String overview) {
-        this.migrationJob = migrationJob;
+    public MigrationPoints(List<MigrationPoint> migrationPoints, String overview) {
+        this.migrationPoints = migrationPoints;
         this.overview = overview;
-    }
-
-    /**
-     * Construct from DTO and create MigrationPoint entities
-     */
-    public static MigrationPoints fromDto(com.embabel.modernizer.agent.MigrationPoints dto, MigrationJob migrationJob) {
-        MigrationPoints entity = new MigrationPoints(migrationJob, dto.overview());
-
-        // Create MigrationPoint entities from DTOs
-        for (MigrationPointDto pointDto : dto.migrationPoints()) {
-            MigrationPoint point = new MigrationPoint(
-                pointDto.filePath(),
-                pointDto.description(),
-                pointDto.recipeId()
-            );
-            migrationJob.addMigrationPoint(point);
+        // Set back-reference
+        for (MigrationPoint point : migrationPoints) {
+            point.setMigrationPoints(this);
         }
-
-        return entity;
     }
 
     // Getters and setters
@@ -100,5 +88,18 @@ public class MigrationPoints {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<MigrationPoint> getMigrationPoints() {
+        return migrationPoints;
+    }
+
+    public void setMigrationPoints(List<MigrationPoint> migrationPoints) {
+        this.migrationPoints = migrationPoints;
+    }
+
+    public void addMigrationPoint(MigrationPoint migrationPoint) {
+        migrationPoints.add(migrationPoint);
+        migrationPoint.setMigrationPoints(this);
     }
 }

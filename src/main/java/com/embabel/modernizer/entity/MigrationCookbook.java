@@ -9,7 +9,6 @@ import java.util.List;
  * Collection of migration recipes (immutable entity)
  */
 @Entity
-@Table(name = "migration_cookbook")
 public class MigrationCookbook {
 
     @Id
@@ -52,7 +51,6 @@ public class MigrationCookbook {
         return recipes;
     }
 
-    // Static cookbook definitions
     public static final MigrationCookbook MODERNIZE_JAVA = new MigrationCookbook(
             "MODERNIZE_JAVA",
             new MigrationRecipe("Legacy", "Code that is outdated and may not follow current best practices."),
