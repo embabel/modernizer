@@ -1,8 +1,9 @@
 package com.embabel.modernizer.shell;
 
-import com.embabel.agent.api.common.autonomy.AgentInvocation;
+import com.embabel.agent.api.invocation.AgentInvocation;
 import com.embabel.agent.core.AgentPlatform;
 import com.embabel.agent.core.ProcessOptions;
+import com.embabel.agent.core.Verbosity;
 import com.embabel.modernizer.agent.Domain;
 import com.embabel.modernizer.agent.MigrationCookbook;
 import com.embabel.modernizer.agent.MigrationRecipe;
@@ -24,10 +25,10 @@ record ModernizerShell(
     ) throws IOException {
         var migrationsReport = AgentInvocation
                 .builder(agentPlatform)
-                .options(ProcessOptions.builder()
-                        .verbosity(v -> v.showPrompts(true))
-                        .listener(new ShowCostListener(30))
-                        .build())
+                .options(ProcessOptions.DEFAULT
+                        .withVerbosity(Verbosity.DEFAULT.showPrompts())
+                        .withListener(new ShowCostListener(30))
+                )
                 .build(Domain.MigrationsReport.class)
                 .invoke(
                         new Domain.MigrationJob(
@@ -62,7 +63,7 @@ record ModernizerShell(
                         new MigrationRecipe("Logging",
                                 "Logger.log statements should use {} placeholders not literals")));
         var migrationsReport = AgentInvocation.builder(agentPlatform)
-                .options(ProcessOptions.builder().verbosity(v -> v.showPrompts(true)).build())
+                .options(ProcessOptions.DEFAULT.withVerbosity(Verbosity.DEFAULT.showPrompts()))
                 .build(Domain.MigrationsReport.class)
                 .invoke(customMigration);
         return migrationsReport + "";

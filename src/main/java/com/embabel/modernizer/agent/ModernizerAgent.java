@@ -30,13 +30,12 @@ public record ModernizerAgent(
                 .withLlm(config.analyzer())
                 .withReferences(softwareProject)
                 .withToolObject(new BashTools(softwareProject.getRoot()))
-                .withTemplate("find_migration_points")
+                .rendering("find_migration_points")
                 .createObject(
                         Domain.MigrationPoints.class,
                         Map.of(
                                 "notes", migrationJob.notes(),
-                                "recipes", migrationJob.cookbook().recipes()),
-                        "find_migration_points"
+                                "recipes", migrationJob.cookbook().recipes())
                 );
         logger.info("{} migration points found:\n{}",
                 migrationPoints.migrationPoints().size(),
@@ -97,13 +96,12 @@ public record ModernizerAgent(
                 .withLlm(config.fixer())
                 .withReferences(softwareProject)
                 .withToolObject(new BashTools(softwareProject.getRoot()))
-                .withTemplate("fix_migration_point")
+                .rendering("fix_migration_point")
                 .createObject(
                         Domain.MigrationReport.class,
                         Map.of(
                                 "migrationPoint", migrationPoint
-                        ),
-                        "fix_migration_point"
+                        )
                 );
         if (migrationReport.success()) {
             var message = "Fix: " + migrationPoint.description();
