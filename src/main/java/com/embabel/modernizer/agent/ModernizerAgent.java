@@ -106,7 +106,7 @@ public record ModernizerAgent(
         if (migrationReport.success()) {
             var message = "Fix: " + migrationPoint.description();
             softwareProject.commit(message, false);
-            logger.info("Committing branch {} - {} as migration was not successful",
+            logger.info("Committing branch {} - {} as migration was successful",
                     softwareProject.currentBranch(), message);
 
         } else {
