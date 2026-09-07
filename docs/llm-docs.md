@@ -63,5 +63,5 @@ After configuration, run the project using:
 
 ## Additional Links
 
-Spring AI and Amazon Bedrock [documentation]([https://docs.spring.io/spring-ai/reference/api/bedrock.html])
+Spring AI and Amazon Bedrock [documentation](https://docs.spring.io/spring-ai/reference/api/bedrock.html)
 
